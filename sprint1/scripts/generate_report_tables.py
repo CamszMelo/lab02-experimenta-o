@@ -64,7 +64,6 @@ def top5_correlations(kind='spearman'):
 def median_abs_spearman_by_x():
     path = PROCESSED / 'correlations.csv'
     rows = read_csv_rows(path)
-    # Compute median of |spearman_r| grouped by x
     from statistics import median
     by_x = {}
     for r in rows:
@@ -85,6 +84,15 @@ def median_abs_spearman_by_x():
         data.append({'x': x, 'median_|r|': f"{med:.3f}"})
     data.sort(key=lambda d: float(d['median_|r|']), reverse=True)
     return data
+
+# Fallback for generic correlations.csv tables
+
+def fallback_correlations():
+    path = PROCESSED / 'correlations.csv'
+    rows = read_csv_rows(path)
+    if not rows:
+        return []
+    return rows[:5]
 
 # Patch RELATORIO.md between markers
 
@@ -112,6 +120,15 @@ if __name__ == '__main__':
         sections.append(md_table(['x','median_|r|'], med_rows))
 
     tables_md = '\n\n'.join(sections)
+
+    if not sections:
+        # fallback generic correlation table if the CSV does not match expected schema
+        fallback = fallback_correlations()
+        if fallback:
+            sections.append('#### <a name="tabela0"></a>Tabela 0. Correlações (fallback)')
+            headers = list(fallback[0].keys())
+            sections.append(md_table(headers, fallback))
+            tables_md = '\n\n'.join(sections)
 
     report_text = REPORT.read_text(encoding='utf-8')
     start_mark = '<!-- TABLES:BEGIN -->'
